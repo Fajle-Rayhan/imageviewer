@@ -2,10 +2,11 @@
 Type=Application
 Name=ImageViewer
 GenericName=Image Viewer
-Comment=Linux-first image viewer with thumbnails and editing overlay
+Comment=Qt 6 image viewer with thumbnails and in-canvas editing
 Exec=imageviewer %f
+Icon=imageviewer
 Terminal=false
 Categories=Graphics;Viewer;
-MimeType=image/png;image/jpeg;image/webp;image/gif;image/bmp;image/svg+xml;image/tiff;
-Keywords=image;viewer;hyprland;wayland;
+MimeType=image/png;image/jpeg;image/webp;image/gif;image/bmp;image/svg+xml;image/tiff;image/x-icon;
+Keywords=image;viewer;qt;wayland;x11;
 StartupNotify=true
