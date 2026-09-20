@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imageviewer"
+version = "0.1.0"
+description = "Linux-first Qt image viewer with thumbnails, overlays, minimap, and editing"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "PySide6>=6.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+imageviewer = "imageviewer.main:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
