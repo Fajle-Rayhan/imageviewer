@@ -1,0 +1,23 @@
+pkgname=imageviewer
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Linux-first Qt image viewer for Wayland/X11"
+arch=('x86_64')
+url='https://github.com/Fajle-Rayhan/imageviewer'
+license=('MIT')
+depends=('python' 'python-pyside6')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 packaging/imageviewer.desktop "$pkgdir/usr/share/applications/imageviewer.desktop"
+  install -Dm644 packaging/imageviewer-mime.xml "$pkgdir/usr/share/mime/packages/imageviewer-mime.xml"
+}
