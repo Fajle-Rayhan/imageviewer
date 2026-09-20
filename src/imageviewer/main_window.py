@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import math
-import os
+import subprocess
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import (QAction, QColor, QImage, QImageReader, QKeySequence,
-                           QMouseEvent, QPainter, QPen, QPixmap)
+                           QMouseEvent, QPainter, QPen, QPixmap, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QColorDialog,
                                QComboBox, QDialog, QDockWidget, QFileDialog,
                                QFormLayout, QGraphicsPixmapItem, QGraphicsScene,
@@ -416,6 +415,16 @@ class MainWindow(QMainWindow):
         self._add_action("Open with", self.open_with)
         self._add_action("Edit with Satty", self.edit_with_satty, shortcuts.get("satty"))
         self._add_action("Pencil", self.toggle_editor, shortcuts.get("pencil"))
+        self._add_action("Undo", self.canvas.undo)
+        self._add_action("Redo", self.canvas.redo)
+        self._add_action("Eraser", self.toggle_eraser)
+        self._add_action("Brush+", lambda: self.set_brush_size(self.canvas.stroke_size + 2))
+        self._add_action("Brush-", lambda: self.set_brush_size(max(1, self.canvas.stroke_size - 2)))
+        self._add_action("Opacity+", lambda: self.set_brush_opacity(min(1.0, self.canvas.stroke_opacity + 0.1)))
+        self._add_action("Opacity-", lambda: self.set_brush_opacity(max(0.1, self.canvas.stroke_opacity - 0.1)))
+        self._add_action("Color", self.pick_brush_color)
+        self._add_action("Save Copy", self.save_copy)
+        self._add_action("Save As", self.save_as)
         self._add_action("Metadata", self.show_metadata)
         self._add_action("Trash", self.delete_current, shortcuts.get("delete"))
         self._add_action("Settings", self.open_settings, shortcuts.get("open_settings"))
@@ -559,14 +568,13 @@ class MainWindow(QMainWindow):
     def rotate_right(self) -> None:
         if self.canvas._source_image is None:
             return
-        transform = self.canvas._source_image.transformed
-        self.canvas.set_image(transform(QPainter().transform().rotate(90)))
+        self.canvas.set_image(self.canvas._source_image.transformed(QTransform().rotate(90)))
 
     def open_with(self) -> None:
         current = self.model.state.current
         if not current:
             return
-        os.system(f'xdg-open "{current}"')
+        subprocess.Popen(["xdg-open", str(current)])
 
     def edit_with_satty(self) -> None:
         current = self.model.state.current
@@ -580,12 +588,44 @@ class MainWindow(QMainWindow):
 
     def toggle_editor(self) -> None:
         self.canvas.editing = not self.canvas.editing
-        if self.canvas.editing:
-            QMessageBox.information(
-                self,
-                "Editor",
-                "Editor enabled. Draw with left mouse, middle-drag to pan, Delete in toolbar saves via Save Copy/Save As actions.",
-            )
+        QMessageBox.information(
+            self,
+            "Editor",
+            "Editor enabled. Use left mouse to draw, Undo/Redo, Eraser, Brush, Opacity, Color, Crop, Save Copy or Save As.",
+        )
+
+    def set_brush_size(self, size: int) -> None:
+        self.canvas.stroke_size = size
+
+    def set_brush_opacity(self, value: float) -> None:
+        self.canvas.stroke_opacity = value
+
+    def pick_brush_color(self) -> None:
+        color = QColorDialog.getColor(self.canvas.stroke_color, self)
+        if color.isValid():
+            self.canvas.stroke_color = color
+            self.canvas.eraser = False
+
+    def toggle_eraser(self) -> None:
+        self.canvas.eraser = not self.canvas.eraser
+
+    def save_copy(self) -> None:
+        current = self.model.state.current
+        if not current:
+            return
+        target, _ = QFileDialog.getSaveFileName(self, "Save copy", str(current.with_name(f"{current.stem}_copy{current.suffix}")))
+        if target:
+            self.canvas.save_copy(Path(target))
+
+    def save_as(self) -> None:
+        current = self.model.state.current
+        if not current:
+            return
+        target, _ = QFileDialog.getSaveFileName(self, "Save As", str(current))
+        if not target:
+            return
+        if self.canvas.save_overwrite(Path(target)):
+            self.open_path(Path(target))
 
     def show_metadata(self) -> None:
         current = self.model.state.current
